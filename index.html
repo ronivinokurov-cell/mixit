@@ -2455,16 +2455,16 @@ const Timers = {
 
 
 /* ===== screen-next.js ===== */
-/* ===== WHAT'S NEXT: activity generator ===== */
+/* ===== WHAT'S NEXT: activity generator with quick filters ===== */
 const Next = {
   get state() {
-    UI.next = UI.next || { min: null, budget: null, people: null, cats: [], place: null, current: null, revealed: false };
+    UI.next = UI.next || { min: null, budget: null, people: null, cats: [], place: null, current: null, adv: false };
     return UI.next;
   },
+  all() { return ACTIVITIES.concat(S.activities.custom || []); },
   pool() {
     const st = this.state;
-    const all = ACTIVITIES.concat(S.activities.custom || []);
-    return all.filter((a) => {
+    return this.all().filter((a) => {
       if (st.min && a.min > st.min) return false;
       if (st.budget) {
         const order = BUDGETS.indexOf(a.budget);
@@ -2476,75 +2476,51 @@ const Next = {
       return true;
     });
   },
-  draw() {
+  draw(silent) {
     const st = this.state;
     const pool = this.pool();
-    if (!pool.length) { toast('אין התאמות. אפשר להסיר חלק מהסינונים', 'err'); return; }
+    if (!pool.length) {
+      toast('אין התאמות לסינון הזה. אפשר להרחיב אותו', 'err');
+      return;
+    }
     let pick = pool[Math.floor(Math.random() * pool.length)];
     if (pool.length > 1 && st.current) {
       let guard = 0;
-      while (pick.id === st.current && guard++ < 20) pick = pool[Math.floor(Math.random() * pool.length)];
+      while (pick.id === st.current && guard++ < 25) pick = pool[Math.floor(Math.random() * pool.length)];
     }
     st.current = pick.id;
-    st.revealed = false;
     S.stats.ideas = (S.stats.ideas || 0) + 1;
     S.activities.history = (S.activities.history || []).concat([{ id: pick.id, at: new Date().toISOString() }]).slice(-60);
     save(); checkAchievements();
     this.renderBody();
+    if (!silent) this.syncBar();
   },
   showById(id) {
-    const all = ACTIVITIES.concat(S.activities.custom || []);
-    const a = all.find((x) => x.id === id);
+    const a = this.all().find((x) => x.id === id);
     if (!a) return;
     this.state.current = id;
     this.renderBody();
     const card = document.getElementById('idea-slot');
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
   },
-  currentActivity() {
-    const all = ACTIVITIES.concat(S.activities.custom || []);
-    return all.find((a) => a.id === this.state.current) || null;
-  },
+  currentActivity() { return this.all().find((a) => a.id === this.state.current) || null; },
+
   render(view) {
     const st = this.state;
-    const pool = this.pool();
     const custom = S.activities.custom || [];
-    const favs = (S.activities.favorites || []).map((id) => ACTIVITIES.concat(custom).find((a) => a.id === id)).filter(Boolean);
+    const favs = (S.activities.favorites || []).map((id) => this.all().find((a) => a.id === id)).filter(Boolean);
 
     view.innerHTML = '<div class="shell">' +
-      '<div class="row" style="margin-bottom:12px"><div class="sp"><div class="h1">WHAT’S NEXT</div>' +
-      '<div class="sub">מה עושים עכשיו? בוחרים סינון ומגרילים 🎲</div></div>' +
+      '<div class="row" style="margin-bottom:10px"><div class="sp"><div class="h1">WHAT’S NEXT</div>' +
+      '<div class="sub">סינון מהיר ובלחיצה אחת יש רעיון 🎲</div></div>' +
       '<button class="icon-btn" id="nx-search">🔍</button></div>' +
 
-      '<div class="card">' +
-      '<div class="h3" style="margin-bottom:8px">⏱ כמה זמן יש?</div>' +
-      '<div class="chips" style="margin-bottom:14px">' +
-      [['', 'לא משנה'], ['5', '5 דק׳'], ['15', '15 דק׳'], ['30', 'חצי שעה'], ['60', 'שעה+']].map((t) =>
-        '<button class="chip ' + (String(st.min || '') === t[0] ? 'on' : '') + '" data-min="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
-      '<div class="h3" style="margin-bottom:8px">💰 תקציב</div>' +
-      '<div class="chips" style="margin-bottom:14px">' +
-      [['', 'לא משנה'], ['חינם', 'חינם'], ['עד 20 ₪', 'עד 20 ₪'], ['עד 50 ₪', 'עד 50 ₪']].map((t) =>
-        '<button class="chip ' + (String(st.budget || '') === t[0] ? 'on' : '') + '" data-budget="' + esc(t[0]) + '">' + t[1] + '</button>').join('') + '</div>' +
-      '<div class="h3" style="margin-bottom:8px">👥 עם מי?</div>' +
-      '<div class="chips" style="margin-bottom:14px">' +
-      [['', 'לא משנה'], ['1', 'לבד'], ['2', 'זוג / חבר'], ['4', 'חבורה']].map((t) =>
-        '<button class="chip ' + (String(st.people || '') === t[0] ? 'on' : '') + '" data-people="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
-      '<div class="h3" style="margin-bottom:8px">📍 איפה?</div>' +
-      '<div class="chips" style="margin-bottom:14px">' +
-      [['', 'לא משנה'], ['בבית', 'בבית'], ['בחוץ', 'בחוץ']].map((t) =>
-        '<button class="chip ' + (String(st.place || '') === t[0] ? 'on' : '') + '" data-place="' + esc(t[0]) + '">' + t[1] + '</button>').join('') + '</div>' +
-      '<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="h3">🎨 סוג פעילות</div>' +
-      '<button class="tiny" id="nx-clearcats" style="text-decoration:underline;font-weight:800">ניקוי</button></div>' +
-      '<div class="chips">' + Object.keys(CATS).map((k) => '<button class="chip ' + (st.cats.includes(k) ? 'on' : '') + '" data-cat="' + k + '">' + CATS[k].icon + ' ' + CATS[k].label + '</button>').join('') + '</div>' +
-      '</div>' +
+      '<div class="card tight" id="nx-bar"></div>' +
+      '<div id="idea-slot" style="margin-top:12px"></div>' +
 
-      '<div class="section"><div id="idea-slot"></div>' +
       '<div class="row" style="margin-top:10px;gap:8px">' +
-      '<button class="btn block" id="nx-draw">🎲 ' + (this.currentActivity() ? 'עוד רעיון' : 'הגרל פעילות') + '</button>' +
-      '<button class="btn ghost" id="nx-fav" title="שמירה במועדפים">' + (this.currentActivity() && (S.activities.favorites || []).includes(this.currentActivity().id) ? '💖' : '🤍') + '</button>' +
-      '</div>' +
-      '<div class="tiny" style="text-align:center;margin-top:8px">' + pool.length + ' רעיונות מתאימים לסינון שלך</div>' +
-      '</div>' +
+      '<button class="btn block" id="nx-draw">🎲 עוד רעיון</button>' +
+      '<button class="btn ghost" id="nx-fav">🤍</button></div>' +
 
       '<div class="section"><div class="section-head"><div class="h2">🧠 חידת היום</div>' +
       '<button class="btn ghost xs" id="nx-riddle">גלה תשובה</button></div>' +
@@ -2573,60 +2549,112 @@ const Next = {
       }).join('') + '</div></div>' +
       '</div>';
 
-    const rebind = () => {
-      $$('[data-min]', view).forEach((b) => { b.onclick = () => { this.state.min = b.dataset.min ? Number(b.dataset.min) : null; this.render(view); }; });
-      $$('[data-budget]', view).forEach((b) => { b.onclick = () => { this.state.budget = b.dataset.budget || null; this.render(view); }; });
-      $$('[data-people]', view).forEach((b) => { b.onclick = () => { this.state.people = b.dataset.people ? Number(b.dataset.people) : null; this.render(view); }; });
-      $$('[data-place]', view).forEach((b) => { b.onclick = () => { this.state.place = b.dataset.place || null; this.render(view); }; });
-      $$('[data-cat]', view).forEach((b) => {
-        b.onclick = () => {
-          const k = b.dataset.cat, arr = this.state.cats;
-          const i = arr.indexOf(k);
-          if (i >= 0) arr.splice(i, 1); else arr.push(k);
-          this.render(view);
-        };
-      });
-      $$('[data-cat-only]', view).forEach((b) => {
-        b.onclick = () => { this.state.cats = [b.dataset.catOnly]; this.state.current = null; this.draw(); };
-      });
-      $$('[data-open]', view).forEach((b) => { b.onclick = () => this.showById(b.dataset.open); });
-      $$('[data-del-custom]', view).forEach((b) => {
-        b.onclick = () => {
-          S.activities.custom = S.activities.custom.filter((x) => x.id !== b.dataset.delCustom);
-          S.activities.favorites = S.activities.favorites.filter((x) => x !== b.dataset.delCustom);
-          save(); toast('הפעילות נמחקה', 'ok'); this.render(view);
-        };
-      });
-      $('#nx-clearcats', view).onclick = () => { this.state.cats = []; this.render(view); };
-      $('#nx-search', view).onclick = openSearch;
-      $('#nx-draw', view).onclick = () => this.draw();
-      $('#nx-fav', view).onclick = () => {
-        const a = this.currentActivity();
-        if (!a) { toast('קודם מגרילים רעיון', 'err'); return; }
-        const favs = S.activities.favorites = S.activities.favorites || [];
-        const i = favs.indexOf(a.id);
-        if (i >= 0) { favs.splice(i, 1); toast('הוסר מהמועדפים'); }
-        else { favs.push(a.id); toast('נשמר במועדפים 💖', 'ok'); checkAchievements(); }
-        save(); this.render(view);
-      };
-      $('#nx-riddle', view).onclick = () => {
-        const el = $('#riddle-a', view);
-        if (!el) return;
-        el.style.display = el.style.display === 'none' ? 'block' : 'none';
-      };
-      $('#nx-custom', view).onclick = () => this.customForm(view);
+    $('#nx-search', view).onclick = openSearch;
+    $('#nx-draw', view).onclick = () => this.draw();
+    $('#nx-fav', view).onclick = () => this.toggleFav();
+    $('#nx-riddle', view).onclick = () => {
+      const el = $('#riddle-a', view);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
     };
-    rebind();
-    this.renderBody();
+    $('#nx-custom', view).onclick = () => this.customForm(view);
+    $$('[data-open]', view).forEach((b) => { b.onclick = () => this.showById(b.dataset.open); });
+    $$('[data-del-custom]', view).forEach((b) => {
+      b.onclick = () => {
+        S.activities.custom = S.activities.custom.filter((x) => x.id !== b.dataset.delCustom);
+        S.activities.favorites = (S.activities.favorites || []).filter((x) => x !== b.dataset.delCustom);
+        save(); toast('הפעילות נמחקה', 'ok'); this.render(view);
+      };
+    });
+    $$('[data-cat-only]', view).forEach((b) => {
+      b.onclick = () => { this.state.cats = [b.dataset.catOnly]; this.syncBar(); this.draw(); };
+    });
+
+    this.syncBar();
+    if (!this.currentActivity()) this.draw(true);
+    else this.renderBody();
   },
+
+  /* compact quick-filter bar: time / budget / participants in one card */
+  syncBar() {
+    const bar = document.getElementById('nx-bar');
+    if (!bar) return;
+    const st = this.state;
+    const seg = (label, opts, key, active, fmt) =>
+      '<div class="row" style="gap:6px;margin-bottom:8px"><span class="tiny" style="min-width:62px;font-weight:800">' + label + '</span>' +
+      '<div class="chips" style="flex:1">' + opts.map((o) => {
+        const v = o[0];
+        const on = String(active || '') === String(v);
+        return '<button class="chip mini ' + (on ? 'on' : '') + '" data-qf="' + key + '" data-v="' + esc(v) + '">' + o[1] + '</button>';
+      }).join('') + '</div></div>';
+
+    bar.innerHTML =
+      '<div class="row" style="margin-bottom:8px"><div class="h3">⚡ סינון מהיר</div><div class="sp"></div>' +
+      '<span class="badge" id="nx-count">' + this.pool().length + ' רעיונות</span>' +
+      '<button class="btn ghost xs" id="nx-adv">' + (st.adv ? 'פחות' : 'עוד') + '</button></div>' +
+      seg('⏱ זמן', [['', 'הכל'], ['5', '5 דק׳'], ['15', '15 דק׳'], ['30', 'חצי שעה'], ['60', 'שעה+']], 'min', st.min) +
+      seg('💰 תקציב', [['', 'הכל'], ['חינם', 'חינם'], ['עד 20 ₪', 'עד 20 ₪'], ['עד 50 ₪', 'עד 50 ₪']], 'budget', st.budget) +
+      seg('👥 משתתפים', [['', 'הכל'], ['1', 'לבד'], ['2', 'זוג'], ['4', 'חבורה']], 'people', st.people) +
+      (st.adv ?
+        '<div class="divider"></div>' +
+        seg('📍 מקום', [['', 'הכל'], ['בבית', 'בבית'], ['בחוץ', 'בחוץ']], 'place', st.place) +
+        '<div class="tiny" style="font-weight:800;margin:4px 0 6px">🎨 סוג</div>' +
+        '<div class="chips">' + Object.keys(CATS).map((k) => '<button class="chip mini ' + (st.cats.includes(k) ? 'on' : '') + '" data-qcat="' + k + '">' + CATS[k].icon + ' ' + CATS[k].label + '</button>').join('') + '</div>' +
+        (st.cats.length || st.place ? '<button class="btn ghost xs" id="nx-reset" style="margin-top:10px">ניקוי הסינון</button>' : '')
+        : '');
+
+    $$('[data-qf]', bar).forEach((b) => {
+      b.onclick = () => {
+        const key = b.dataset.qf;
+        const v = b.dataset.v;
+        const cur = this.state[key];
+        let next = v === '' ? null : v;
+        if (String(cur || '') === String(v)) next = null;
+        if (key === 'min' || key === 'people') next = next ? Number(next) : null;
+        this.state[key] = next;
+        this.syncBar();
+        this.draw(true);
+      };
+    });
+    $$('[data-qcat]', bar).forEach((b) => {
+      b.onclick = () => {
+        const k = b.dataset.qcat, arr = this.state.cats;
+        const i = arr.indexOf(k);
+        if (i >= 0) arr.splice(i, 1); else arr.push(k);
+        this.syncBar(); this.draw(true);
+      };
+    });
+    const adv = document.getElementById('nx-adv');
+    if (adv) adv.onclick = () => { this.state.adv = !this.state.adv; this.syncBar(); };
+    const rst = document.getElementById('nx-reset');
+    if (rst) rst.onclick = () => {
+      this.state.cats = []; this.state.place = null;
+      this.syncBar(); this.draw(true);
+    };
+    const fav = document.getElementById('nx-fav');
+    if (fav) {
+      const a = this.currentActivity();
+      fav.textContent = a && (S.activities.favorites || []).includes(a.id) ? '💖' : '🤍';
+    }
+  },
+
+  toggleFav() {
+    const a = this.currentActivity();
+    if (!a) { toast('קודם מגרילים רעיון', 'err'); return; }
+    const favs = S.activities.favorites = S.activities.favorites || [];
+    const i = favs.indexOf(a.id);
+    if (i >= 0) { favs.splice(i, 1); toast('הוסר מהמועדפים'); }
+    else { favs.push(a.id); toast('נשמר במועדפים 💖', 'ok'); checkAchievements(); }
+    save(); this.syncBar();
+  },
+
   renderBody() {
     const slot = document.getElementById('idea-slot');
     if (!slot) return;
     const a = this.currentActivity();
     if (!a) {
-      slot.innerHTML = '<div class="card" style="text-align:center;padding:28px 18px">' +
-        '<div style="font-size:44px">🎲</div><div class="h2" style="margin-top:8px">מוכנים?</div>' +
-        '<div class="sub" style="margin-top:6px">בחרו סינון ולחצו על הכפתור. יש כאן ' + this.pool().length + ' רעיונות שמחכים.</div></div>';
+      slot.innerHTML = '<div class="card" style="text-align:center;padding:26px 18px">' +
+        '<div style="font-size:40px">🎲</div><div class="h2" style="margin-top:6px">מוכנים?</div>' +
+        '<div class="sub" style="margin-top:6px">בחרו סינון ולחצו הגרל. יש כאן ' + this.pool().length + ' רעיונות.</div></div>';
       return;
     }
     const cat = CATS[a.cat] || CATS.home;
@@ -2641,21 +2669,19 @@ const Next = {
       '<button class="btn ghost sm" id="nx-create">🎨 ליצור מזה עיצוב</button>' +
       '<button class="btn ghost sm" id="nx-cal">📅 לקבוע ביומן</button></div>';
     const did = document.getElementById('nx-did');
-    if (did) did.onclick = () => {
-      toast('כל הכבוד! רעיון אחד פחות לנצח 🎉', 'ok', 3000);
-      bump('ideas', 1);
-      this.draw();
-    };
+    if (did) did.onclick = () => { toast('כל הכבוד! 🎉', 'ok', 2600); bump('ideas', 1); this.draw(); };
     const cr = document.getElementById('nx-create');
-    if (cr) cr.onclick = () => { closeSheet(); go('create'); };
+    if (cr) cr.onclick = () => go('create');
     const cal = document.getElementById('nx-cal');
     if (cal) cal.onclick = () => Actions.addEvent({ date: todayISO() });
   },
+
   riddle() {
     const seed = Math.floor(parseISO(todayISO()).getTime() / 86400000);
     const r = RIDDLES[seed % RIDDLES.length];
     return { q: r[0], a: r[1] };
   },
+
   customForm(view) {
     formSheet('פעילות משלכם', [
       { name: 'title', label: 'שם הפעילות', required: true, ph: 'ערב קריוקי במרפסת' },
