@@ -1184,6 +1184,39 @@ const COLOR_SETS = [
   { name: 'פסטל מתוק', colors: ['#F9A8D4', '#A7F3D0', '#BFDBFE', '#FDE68A', '#DDD6FE'] }
 ];
 
+/* ===== moods (אווירה) ===== */
+const MOODS = {
+  energetic: { label: 'אנרגטי', icon: '⚡' },
+  calm: { label: 'רגוע', icon: '🌿' },
+  funny: { label: 'מצחיק', icon: '😂' },
+  creative: { label: 'יצירתי', icon: '🎨' },
+  social: { label: 'חברתי', icon: '👯' },
+  cozy: { label: 'מפנק', icon: '🛋️' },
+  adventure: { label: 'הרפתקני', icon: '🧭' }
+};
+const MOOD_BY_CAT = {
+  friends: 'social', home: 'cozy', outdoor: 'adventure', cooking: 'cozy', craft: 'creative',
+  puzzle: 'calm', movie: 'cozy', sing: 'energetic', photo: 'creative', sport: 'energetic',
+  calm: 'calm', quick: 'energetic'
+};
+const MOOD_EXTRA = {
+  a01: ['funny'], a02: ['social', 'funny'], a03: ['funny', 'energetic'], a04: ['funny'], a06: ['social', 'funny'],
+  a07: ['adventure', 'creative'], a09: ['calm', 'creative'], a10: ['funny'], a11: ['energetic', 'funny'], a12: ['funny', 'social'],
+  a16: ['energetic'], a20: ['funny', 'calm'], a21: ['creative', 'calm'], a23: ['calm', 'adventure'], a24: ['cozy', 'calm'],
+  a25: ['adventure', 'energetic'], a27: ['calm'], a28: ['creative', 'calm'], a29: ['energetic'], a31: ['calm', 'creative'],
+  a33: ['cozy', 'creative'], a35: ['creative', 'cozy'], a37: ['social', 'creative'], a39: ['funny', 'social'], a41: ['creative', 'funny'],
+  a43: ['creative', 'calm'], a44: ['creative'], a50: ['funny', 'creative'], a51: ['funny', 'creative'], a53: ['calm'],
+  a55: ['social', 'calm'], a57: ['social', 'funny'], a59: ['funny', 'energetic'], a62: ['cozy', 'social'], a64: ['funny', 'creative'],
+  a69: ['funny', 'energetic'], a70: ['energetic'], a73: ['funny', 'energetic'], a74: ['social', 'funny'], a76: ['funny', 'social'],
+  a77: ['creative', 'calm'], a80: ['creative', 'cozy'], a83: ['funny', 'energetic'], a87: ['energetic', 'social'],
+  a90: ['adventure', 'calm'], a93: ['calm'], a97: ['calm', 'adventure'], a100: ['calm'], a102: ['energetic', 'funny'],
+  a103: ['creative', 'calm'], a105: ['calm', 'energetic']
+};
+ACTIVITIES.forEach((a) => {
+  const list = [MOOD_BY_CAT[a.cat] || 'cozy'].concat(MOOD_EXTRA[a.id] || []);
+  a.moods = Array.from(new Set(list));
+});
+
 
 /* ===== screen-auth.js ===== */
 /* ===== onboarding + signup ===== */
@@ -2458,7 +2491,7 @@ const Timers = {
 /* ===== WHAT'S NEXT: activity generator with quick filters ===== */
 const Next = {
   get state() {
-    UI.next = UI.next || { min: null, budget: null, people: null, cats: [], place: null, current: null, adv: false };
+    UI.next = UI.next || { min: null, budget: null, people: null, moods: [], cats: [], place: null, current: null, adv: false };
     return UI.next;
   },
   all() { return ACTIVITIES.concat(S.activities.custom || []); },
@@ -2471,6 +2504,7 @@ const Next = {
         if (order < 0 || order > BUDGETS.indexOf(st.budget)) return false;
       }
       if (st.people && a.people !== st.people) return false;
+      if (st.moods && st.moods.length && !(a.moods || []).some((m) => st.moods.includes(m))) return false;
       if (st.place && a.place !== st.place) return false;
       if (st.cats.length && !st.cats.includes(a.cat)) return false;
       return true;
@@ -2594,12 +2628,14 @@ const Next = {
       seg('⏱ זמן', [['', 'הכל'], ['5', '5 דק׳'], ['15', '15 דק׳'], ['30', 'חצי שעה'], ['60', 'שעה+']], 'min', st.min) +
       seg('💰 תקציב', [['', 'הכל'], ['חינם', 'חינם'], ['עד 20 ₪', 'עד 20 ₪'], ['עד 50 ₪', 'עד 50 ₪']], 'budget', st.budget) +
       seg('👥 משתתפים', [['', 'הכל'], ['1', 'לבד'], ['2', 'זוג'], ['4', 'חבורה']], 'people', st.people) +
+      '<div class="row" style="gap:6px;margin-bottom:8px"><span class="tiny" style="min-width:62px;font-weight:800">🎭 אווירה</span>' +
+      '<div class="chips" style="flex:1">' + Object.keys(MOODS).map((k) => '<button class="chip mini ' + ((st.moods || []).includes(k) ? 'on' : '') + '" data-qmood="' + k + '">' + MOODS[k].icon + ' ' + MOODS[k].label + '</button>').join('') + '</div></div>' +
       (st.adv ?
         '<div class="divider"></div>' +
         seg('📍 מקום', [['', 'הכל'], ['בבית', 'בבית'], ['בחוץ', 'בחוץ']], 'place', st.place) +
         '<div class="tiny" style="font-weight:800;margin:4px 0 6px">🎨 סוג</div>' +
         '<div class="chips">' + Object.keys(CATS).map((k) => '<button class="chip mini ' + (st.cats.includes(k) ? 'on' : '') + '" data-qcat="' + k + '">' + CATS[k].icon + ' ' + CATS[k].label + '</button>').join('') + '</div>' +
-        (st.cats.length || st.place ? '<button class="btn ghost xs" id="nx-reset" style="margin-top:10px">ניקוי הסינון</button>' : '')
+        ((st.cats.length || st.place || (st.moods||[]).length) ? '<button class="btn ghost xs" id="nx-reset" style="margin-top:10px">ניקוי הסינון</button>' : '')
         : '');
 
     $$('[data-qf]', bar).forEach((b) => {
@@ -2615,6 +2651,14 @@ const Next = {
         this.draw(true);
       };
     });
+    $$('[data-qmood]', bar).forEach((b) => {
+      b.onclick = () => {
+        const k = b.dataset.qmood, arr = this.state.moods || (this.state.moods = []);
+        const i = arr.indexOf(k);
+        if (i >= 0) arr.splice(i, 1); else arr.push(k);
+        this.syncBar(); this.draw(true);
+      };
+    });
     $$('[data-qcat]', bar).forEach((b) => {
       b.onclick = () => {
         const k = b.dataset.qcat, arr = this.state.cats;
@@ -2627,7 +2671,7 @@ const Next = {
     if (adv) adv.onclick = () => { this.state.adv = !this.state.adv; this.syncBar(); };
     const rst = document.getElementById('nx-reset');
     if (rst) rst.onclick = () => {
-      this.state.cats = []; this.state.place = null;
+      this.state.cats = []; this.state.place = null; this.state.moods = [];
       this.syncBar(); this.draw(true);
     };
     const fav = document.getElementById('nx-fav');
@@ -2662,7 +2706,8 @@ const Next = {
       '<div class="row" style="justify-content:space-between"><div class="big">' + a.icon + '</div>' +
       '<span class="badge" style="background:rgba(255,255,255,.24);color:#fff">' + cat.icon + ' ' + cat.label + '</span></div>' +
       '<h3>' + esc(a.title) + '</h3><p>' + esc(a.desc) + '</p>' +
-      '<div class="meta"><span>⏱ ' + a.min + ' דק׳</span><span>💰 ' + esc(a.budget) + '</span><span>👥 ' + (a.people === 1 ? 'לבד' : a.people + ' משתתפים') + '</span><span>📍 ' + esc(a.place) + '</span></div>' +
+      '<div class="meta"><span>⏱ ' + a.min + ' דק׳</span><span>💰 ' + esc(a.budget) + '</span><span>👥 ' + (a.people === 1 ? 'לבד' : a.people + ' משתתפים') + '</span><span>📍 ' + esc(a.place) + '</span>' +
+      (a.moods || []).map((m) => '<span>' + (MOODS[m] ? MOODS[m].icon + ' ' + MOODS[m].label : '') + '</span>').join('') + '</div>' +
       '</div>' +
       '<div class="row" style="margin-top:10px;gap:8px">' +
       '<button class="btn sage sm" id="nx-did">✅ עשיתי את זה</button>' +
@@ -2695,7 +2740,8 @@ const Next = {
       S.activities.custom = S.activities.custom || [];
       S.activities.custom.unshift({
         id: uid('c'), title: v.title, desc: v.desc || 'פעילות אישית שלי', icon: '⭐',
-        cat: v.cat, min: Number(v.min), budget: v.budget, people: Number(v.people), place: v.place, custom: true
+        cat: v.cat, min: Number(v.min), budget: v.budget, people: Number(v.people), place: v.place, custom: true,
+        moods: [MOOD_BY_CAT[v.cat] || 'cozy']
       });
       save(); toast('הפעילות נוספה להגרלות', 'ok'); this.render(view);
     }, 'הוספה');
