@@ -221,3 +221,36 @@ const COLOR_SETS = [
   { name: 'בז׳ חם', colors: ['#C89B6D', '#E6C9A8', '#F3E7D9', '#FBF4EC', '#7A5533'] },
   { name: 'פסטל מתוק', colors: ['#F9A8D4', '#A7F3D0', '#BFDBFE', '#FDE68A', '#DDD6FE'] }
 ];
+
+/* ===== moods (אווירה) ===== */
+const MOODS = {
+  energetic: { label: 'אנרגטי', icon: '⚡' },
+  calm: { label: 'רגוע', icon: '🌿' },
+  funny: { label: 'מצחיק', icon: '😂' },
+  creative: { label: 'יצירתי', icon: '🎨' },
+  social: { label: 'חברתי', icon: '👯' },
+  cozy: { label: 'מפנק', icon: '🛋️' },
+  adventure: { label: 'הרפתקני', icon: '🧭' }
+};
+const MOOD_BY_CAT = {
+  friends: 'social', home: 'cozy', outdoor: 'adventure', cooking: 'cozy', craft: 'creative',
+  puzzle: 'calm', movie: 'cozy', sing: 'energetic', photo: 'creative', sport: 'energetic',
+  calm: 'calm', quick: 'energetic'
+};
+const MOOD_EXTRA = {
+  a01: ['funny'], a02: ['social', 'funny'], a03: ['funny', 'energetic'], a04: ['funny'], a06: ['social', 'funny'],
+  a07: ['adventure', 'creative'], a09: ['calm', 'creative'], a10: ['funny'], a11: ['energetic', 'funny'], a12: ['funny', 'social'],
+  a16: ['energetic'], a20: ['funny', 'calm'], a21: ['creative', 'calm'], a23: ['calm', 'adventure'], a24: ['cozy', 'calm'],
+  a25: ['adventure', 'energetic'], a27: ['calm'], a28: ['creative', 'calm'], a29: ['energetic'], a31: ['calm', 'creative'],
+  a33: ['cozy', 'creative'], a35: ['creative', 'cozy'], a37: ['social', 'creative'], a39: ['funny', 'social'], a41: ['creative', 'funny'],
+  a43: ['creative', 'calm'], a44: ['creative'], a50: ['funny', 'creative'], a51: ['funny', 'creative'], a53: ['calm'],
+  a55: ['social', 'calm'], a57: ['social', 'funny'], a59: ['funny', 'energetic'], a62: ['cozy', 'social'], a64: ['funny', 'creative'],
+  a69: ['funny', 'energetic'], a70: ['energetic'], a73: ['funny', 'energetic'], a74: ['social', 'funny'], a76: ['funny', 'social'],
+  a77: ['creative', 'calm'], a80: ['creative', 'cozy'], a83: ['funny', 'energetic'], a87: ['energetic', 'social'],
+  a90: ['adventure', 'calm'], a93: ['calm'], a97: ['calm', 'adventure'], a100: ['calm'], a102: ['energetic', 'funny'],
+  a103: ['creative', 'calm'], a105: ['calm', 'energetic']
+};
+ACTIVITIES.forEach((a) => {
+  const list = [MOOD_BY_CAT[a.cat] || 'cozy'].concat(MOOD_EXTRA[a.id] || []);
+  a.moods = Array.from(new Set(list));
+});
