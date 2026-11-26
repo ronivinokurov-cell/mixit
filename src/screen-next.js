@@ -62,6 +62,9 @@ const Next = {
       '<div class="card tight" id="nx-bar"></div>' +
       '<div id="idea-slot" style="margin-top:12px"></div>' +
 
+      '<button class="card tight" id="nx-games" style="width:100%;text-align:start;margin-top:12px;display:flex;align-items:center;gap:12px">' +
+      '<span style="font-size:26px">🕹️</span><span class="sp"><span class="h3" style="display:block">פינת המשחקים</span>' +
+      '<span class="tiny">12 משחקים חדשים — זיכרון, 2048, סיימון, טריוויה ועוד</span></span><span style="color:var(--ink-3)">›</span></button>' +
       '<div class="row" style="margin-top:10px;gap:8px">' +
       '<button class="btn block" id="nx-draw">🎲 עוד רעיון</button>' +
       '<button class="btn ghost" id="nx-fav">🤍</button></div>' +
@@ -94,6 +97,7 @@ const Next = {
       '</div>';
 
     $('#nx-search', view).onclick = openSearch;
+    $('#nx-games', view).onclick = () => go('games');
     $('#nx-draw', view).onclick = () => this.draw();
     $('#nx-fav', view).onclick = () => this.toggleFav();
     $('#nx-riddle', view).onclick = () => {
