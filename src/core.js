@@ -454,7 +454,8 @@ function render() {
   fn(view);
   const nav = $('#nav');
   if (nav) {
-    $$('button', nav).forEach((b) => b.classList.toggle('on', b.dataset.go === UI.screen));
+    const activeNav = UI.screen === 'games' ? 'next' : UI.screen;
+    $$('button', nav).forEach((b) => b.classList.toggle('on', b.dataset.go === activeNav));
   }
   const top = $('#topTitle');
   if (top) top.textContent = ({ home: 'בית', organizer: 'ארגון', next: 'מה עושים עכשיו?', create: 'יצירה ועיצוב', profile: 'הפרופיל שלי' })[UI.screen] || 'MIXIT';
