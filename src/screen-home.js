@@ -148,6 +148,7 @@ const Home = {
         '<button data-q="timer"><i>⏱️</i>טיימר</button>' +
         '<button data-q="shop"><i>🛒</i>קניות</button>' +
         '<button data-q="goal"><i>🎯</i>מטרה</button>' +
+        '<button data-q="games"><i>🕹️</i>משחקים</button>' +
         '<button data-q="search"><i>🔍</i>חיפוש</button>' +
         '</div></div>';
     }
@@ -231,6 +232,7 @@ const Home = {
         else if (q === 'timer') Timers.open();
         else if (q === 'shop') { UI.tab.organizer = 'lists'; go('organizer'); }
         else if (q === 'goal') Actions.addGoal();
+        else if (q === 'games') go('games');
         else if (q === 'search') openSearch();
       };
     });
