@@ -5,7 +5,7 @@ const css = fs.readFileSync('src/styles.css', 'utf8');
 const files = [
   'core.js', 'data-activities.js', 'screen-auth.js', 'screen-home.js',
   'screen-organizer.js', 'screen-organizer-b.js', 'screen-next.js',
-  'screen-create.js', 'screen-profile.js', 'app.js'
+  'screen-create.js', 'screen-profile.js', 'screen-games.js', 'app.js'
 ];
 const js = files.map((f) => '/* ===== ' + f + ' ===== */\n' + fs.readFileSync(path.join('src', f), 'utf8')).join('\n\n');
 
