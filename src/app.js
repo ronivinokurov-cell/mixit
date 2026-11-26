@@ -60,6 +60,7 @@ function boot() {
   if (S.user) touchStreak();
   const baseRender = render;
   render = function () {
+    if (UI.screen !== 'games' && window.Games && Games.current) Games.stop();
     baseRender();
     syncChrome();
   };
